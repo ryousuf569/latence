@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sillage — Biological Audio Analysis",
+  title: "Sillage",
   description:
     "Predict human attention intervals using distilled neural foundation models. Built for producers, artists, and labels.",
 };
