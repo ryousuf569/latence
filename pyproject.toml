@@ -1,0 +1,24 @@
+[project]
+name = "sillage"
+version = "0.1.0"
+dependencies = [
+    "torch",
+    "numpy",
+    "librosa",
+    "scipy"
+]
+
+[project.optional-dependencies]
+training = [
+    "pytorch-lightning",
+    "wandb",
+    "tensorboard"
+]
+plotting = [
+    "matplotlib",
+    "plotly"
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
