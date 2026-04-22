@@ -1,2 +1,4 @@
 PLAN.md
 deployment.md
+.env
+/data/audio/*.wav
