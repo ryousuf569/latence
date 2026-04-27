@@ -1,0 +1,126 @@
+# latence — default hyperparameters
+# Override per experiment in configs/experiments/<name>.yaml
+
+audio:
+  sample_rate: 16000
+  chunk_duration: 30        # seconds — primary training chunk length
+  chunk_overlap: 5          # seconds — overlap between consecutive chunks
+  window_duration: 2.0      # seconds — TRIBE inference sub-window
+  hop_duration: 0.5         # seconds — sub-window hop
+
+mel:
+  n_fft: 1024
+  hop_length: 512           # 480000 samples / 512 ≈ 938 frames for 30s@16kHz
+  n_mels: 128
+  f_min: 20.0
+  f_max: 8000.0
+  power: 2.0                # power spectrogram before mel filterbank
+
+attention:
+  output_hz: 2.0            # 1 value per 0.5s
+  smooth_sigma: 1.0         # Gaussian smoothing sigma (seconds)
+  baseline_window: 10.0     # rolling mean window for relative attention (seconds)
+  roi_weights:
+    auditory_cortex: 0.4    # superior temporal gyrus
+    dorsal_attention: 0.4   # IPS + frontal eye fields
+    dmn_inverse: -0.2       # default mode network deactivation = attention
+  label_atlas: schaefer400  # brain atlas for ROI extraction
+
+model:
+  d_model: 512
+
+  waveform_encoder:
+    out_channels: [64, 128, 192, 256]
+    kernels:      [15,  11,   7,   7]
+    strides:      [ 4,   4,   4,   4]   # total stride 256x → 1875 frames @ 30s
+
+  spectral_encoder:
+    out_channels:  [32,  64, 128, 256]
+    freq_strides:  [ 2,   2,   2,   2]  # collapse 128 → 8 freq bins
+    time_stride: 1                       # preserve temporal resolution
+
+  fusion:
+    type: gated   # gated | concat
+
+  temporal:
+    num_layers: 6
+    num_heads: 8
+    d_ff: 2048
+    dropout: 0.1
+
+  t_shared: 64    # target temporal resolution after adaptive pooling (both encoders)
+
+head:
+  predict_delta: true
+  predict_segments: true
+  num_segment_classes: 8   # intro, verse, pre-chorus, chorus, bridge, outro, drop, breakdown
+
+training:
+  optimizer: adamw
+  lr: 3.0e-4
+  weight_decay: 0.01
+
+  scheduler: cosine_annealing_warm_restarts
+  scheduler_T0: 20
+  scheduler_T_mult: 2
+
+  batch_size: 8
+  accumulate_grad_batches: 4    # effective batch size 32
+
+  max_epochs: 150
+  warmup_epochs: 10             # MSE-only phase before enabling auxiliary losses
+
+  early_stopping_patience: 15
+  early_stopping_monitor: val_mse
+
+  gradient_clip_val: 1.0
+  mixed_precision: true         # fp16
+
+loss:
+  mse: 1.0
+  smoothness: 0.1
+  peak_alignment: 0.5
+  contrastive: 0.2
+  auxiliary: 0.3
+  label_noise_sigma: 0.03       # Gaussian noise injected on targets during training
+  temporal_dropout_rate: 0.10   # fraction of target timesteps masked in loss
+
+augmentations:
+  gain_range: [0.7, 1.3]
+  noise_snr_range: [15, 40]       # dB
+  crop_duration_range: [10, 30]   # seconds
+  time_mask_count: 3
+  time_mask_duration_range: [0.3, 1.0]   # seconds
+  pitch_shift_semitones: 2
+  mixup_alpha: 0.4
+
+evaluation:
+  # Tier 1 targets
+  mse_target: 0.05
+  pearson_target: 0.85
+  peak_f1_target: 0.70
+  drop_f1_target: 0.65
+  temporal_alignment_error_target: 0.5    # seconds
+
+  # Signal thresholds
+  peak_prominence_threshold: 0.3
+  drop_threshold: -0.2
+  drop_min_duration: 2.0    # seconds
+
+  # Tier 2 structural validity
+  expected_dynamic_range: [0.2, 0.8]   # std per track
+
+paths:
+  audio_dir: data/audio/
+  labels_dir: data/labels/
+  metadata_csv: data/full_metadata.csv
+  checkpoints_dir: checkpoints/
+  logs_dir: logs/
+  exports_dir: exports/
+
+api:
+  host: "0.0.0.0"
+  port: 8000
+  max_audio_duration: 600   # seconds
+  cache_results: true
+  social_clip_duration: 15  # seconds — "Viral 15" window
