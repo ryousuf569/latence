@@ -16,7 +16,7 @@ _mel = T.MelSpectrogram(
 
 """[C, T] → [C, 128, T_mel]"""
 def extract_mel(waveform: torch.Tensor) -> torch.Tensor:
-    return _mel(waveform)
+    return torch.log(_mel(waveform) + 1e-8)
 
 """Load audio file, resample if needed, return mel spectrogram [C, 128, T_mel]"""
 def load_and_extract(path: str) -> torch.Tensor:
